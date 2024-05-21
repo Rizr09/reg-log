@@ -84,3 +84,11 @@ model TwoFactorConfirmation {
 
   @@unique([userId])
 }
+
+model Course {
+  id                 String  @id @default(cuid()) @map("_id")
+  title              String
+  description        String
+  slug               String
+  image              String
+}
