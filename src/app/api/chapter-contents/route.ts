@@ -3,11 +3,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 // Define the shape of the request body
-interface CourseDetails {
-    title: string;
-    description: string;
-    slug: string;
-    image: string;
+interface ChapterContentDetails {
+    thumbnail: string;
+    video_url: string;
 }
 
 const POST = async (req: Request): Promise<Response> => {
@@ -18,12 +16,25 @@ const POST = async (req: Request): Promise<Response> => {
             return new NextResponse(null, { status: 403 });
         }
 
-        const courseDetails: CourseDetails = await req.json();
+        const { searchParams } = new URL(req.url);
+        const chapterId = searchParams.get('chapterId');
 
-        // Save post details to database
-        await db.course.create({ data: courseDetails });
+        if (!chapterId) {
+            return new NextResponse(JSON.stringify({ error: 'Chapter ID is required' }), { status: 400 });
+        }
 
-        return new NextResponse(JSON.stringify({ message: 'Post created successfully' }), { status: 201 });
+        const { thumbnail, video_url }: ChapterContentDetails = await req.json();
+
+        const chapter = await db.chapterContents.create({
+            data: {
+                thumbnail,
+                video_url,
+                chapter: { connect: { id: chapterId } },
+            },
+        });
+
+        return new NextResponse(JSON.stringify({ message: 'Post created successfully', chapter }), { status: 201 });
+
     } catch (error: any) {
         console.error('Error creating post:', error);
         return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
@@ -32,23 +43,29 @@ const POST = async (req: Request): Promise<Response> => {
 
 const GET = async (req: Request): Promise<Response> => {
     try {
+        const role = await currentRole();
+
+        if (role == null) {
+            return new NextResponse(null, { status: 403 });
+        }
+
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
 
         if (!id) {
             // return new NextResponse(JSON.stringify({ error: 'Course ID is required' }), { status: 400 });
             // return all
-            const courses = await db.course.findMany();
-            return new NextResponse(JSON.stringify(courses), { status: 200 });
+            const chapters = await db.chapters.findMany();
+            return new NextResponse(JSON.stringify(chapters), { status: 200 });
         }
 
-        const course = await db.course.findUnique({ where: { id } });
+        const chapter = await db.chapters.findUnique({ where: { id } });
 
-        if (!course) {
-            return new NextResponse(JSON.stringify({ error: 'Course not found' }), { status: 404 });
+        if (!chapter) {
+            return new NextResponse(JSON.stringify({ error: 'Chapter Details not found' }), { status: 404 });
         }
 
-        return new NextResponse(JSON.stringify(course), { status: 200 });
+        return new NextResponse(JSON.stringify(chapter), { status: 200 });
     } catch (error: any) {
         console.error('Error retrieving post:', error);
         return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
@@ -63,11 +80,15 @@ const PUT = async (req: Request): Promise<Response> => {
             return new NextResponse(null, { status: 403 });
         }
 
-        const { id, title, description, slug, image }: CourseDetails & { id: string } = await req.json();
+        const { id, thumbnail, video_url }: ChapterContentDetails & { id: string } = await req.json();
 
-        const updatedCourse = await db.course.update({
+        if (!id) {
+            return new NextResponse(JSON.stringify({ error: 'Chapter Content ID is required' }), { status: 400 });
+        }
+
+        const updatedCourse = await db.chapterContents.update({
             where: { id },
-            data: { title, description, slug, image },
+            data: { thumbnail, video_url },
         });
 
         return new NextResponse(JSON.stringify({ message: 'Post updated successfully', course: updatedCourse }), { status: 200 });
@@ -89,10 +110,10 @@ const DELETE = async (req: Request): Promise<Response> => {
         const id = searchParams.get('id');
 
         if (!id) {
-            return new NextResponse(JSON.stringify({ error: 'Course ID is required' }), { status: 400 });
+            return new NextResponse(JSON.stringify({ error: 'Chapter Content ID is required' }), { status: 400 });
         }
 
-        await db.course.delete({ where: { id } });
+        await db.chapters.delete({ where: { id } });
 
         return new NextResponse(JSON.stringify({ message: 'Post deleted successfully' }), { status: 200 });
     } catch (error: any) {
