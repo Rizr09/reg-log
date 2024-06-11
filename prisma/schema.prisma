@@ -18,6 +18,15 @@ enum UserRole {
   USER
 }
 
+enum Status {
+  PENDING
+  ACCEPTED
+  CANCELED
+  REJECTED
+  ONPROGRESS
+  DONE
+}
+
 model User {
   id                    String                 @id @default(auto()) @map("_id") @db.ObjectId
   name                  String?
@@ -30,6 +39,7 @@ model User {
   isTwoFactorEnabled    Boolean                @default(false)
   twoFactorConfirmation TwoFactorConfirmation?
   CourseStudents        CourseStudents[]
+  Transaction           Transaction[]
 }
 
 model Account {
@@ -92,8 +102,21 @@ model Courses {
   description    String
   slug           String
   image          String
-  Chapters       Chapters[]      
+  price          Float?
+  Chapters       Chapters[]
   CourseStudents CourseStudents[]
+  Transaction    Transaction[]
+}
+
+model Transaction {
+  id       String   @id @default(cuid()) @map("_id")
+  date     DateTime @default(now())
+  price    Float
+  status   Status   @default(PENDING)
+  userId   String
+  courseId String
+  course   Courses  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Chapters {
@@ -116,7 +139,7 @@ model ChapterContents {
 model CourseStudents {
   id         String  @id @default(cuid()) @map("_id")
   courseId   String
-  isFinished Boolean  @default(false)
+  isFinished Boolean @default(false)
   certUrl    String?
   userId     String
   grade      Float
