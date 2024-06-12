@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const data = await handleAfterPayment(body);
+        console.log(data);
         return NextResponse.json({ status: 201, message: "Transaction Success", data:data });
     } catch (error) {
         console.log(error);

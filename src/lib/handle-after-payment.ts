@@ -22,16 +22,18 @@ const updateTransactionDb = async (props: MidtransAfterPaymentProps, status: Sta
     }
 }
 
-const signatureKeyCompare = (signature_key: string, status_code: string, order_id: string, gross_amount: string) => {
+const signatureKeyCompare = (signature_key: string, order_id: string, gross_amount: string, status_code: string) => {
+    /*
+    The logic to generate or calculate signature_key is explained below: SHA512(order_id+status_code+gross_amount+ServerKey)
+    */
+    
     const userSignatureKey = `${order_id}${status_code}${gross_amount}${process.env.MIDTRANS_SERVER_KEY}`;
 
-    const hash = createHash('sha512').update(userSignatureKey).digest('hex');
-
-    if (signature_key !== hash) {
-        return false;
-    }
-
-    return true;
+    const hash = createHash('sha512').update(userSignatureKey).digest('hex'); 
+    console.log(hash);
+    console.log(signature_key);
+    
+    return signature_key === hash
 }
 
 export const handleAfterPayment = async (response: MidtransAfterPaymentProps) => {

@@ -51,6 +51,11 @@ export const POST = async (req: Request) => {
                         id: transaction.customer_details.userid,
                     },
                 },
+                course: {
+                    connect: {
+                        id: transaction.customer_details.courseId,
+                    },
+                },
             },
         });
         const transactionToken = await snap.createTransactionToken(transaction);
